@@ -27,8 +27,25 @@ const createUrl = async function (req, res) {
 
   const createUrlData= await urlModel.create(url)
 
-  console.log(redirect(longUrl))
+  
 
   return res.status(201).send({ status: true, data : createUrlData });
 };
-module.exports = { createUrl };
+
+//get url
+
+const getUrl = async function(req, res){
+    const urlCode = req.params.urlCode
+    if(!urlCode) return res.status(400).send({status:false, msg:'Please provide UrlCode'})
+
+    if(!shortid.isValid(urlCode)) return res.status(400).send({status:false, msg:'Please provide valid UrlCode'}) 
+
+     const checkUrlCode = await urlModel.findOne({urlCode:urlCode})
+
+    if(!checkUrlCode) return res.status(400).send({status:false, msg:'UrlCode not found'})
+    
+    return res.redirect(checkUrlCode.longUrl)
+
+}
+
+module.exports = { createUrl, getUrl };
