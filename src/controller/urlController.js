@@ -42,9 +42,9 @@ const getUrl = async function(req, res){
 
      const checkUrlCode = await urlModel.findOne({urlCode:urlCode})
 
-    if(!checkUrlCode) return res.status(400).send({status:false, msg:'UrlCode not found'})
+    if(!checkUrlCode) return res.status(404).send({status:false, msg:'UrlCode not found'})
     
-    return res.redirect(checkUrlCode.longUrl)
+    return res.status(302).redirect(checkUrlCode.longUrl)
 
 }
 
