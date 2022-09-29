@@ -1,50 +1,57 @@
 const urlModel = require("../model/urlModel");
-const shortId = require("shortid");
 const validUrl = require("valid-url");
 const shortid = require("shortid");
 
 const createUrl = async function (req, res) {
-  const longUrl = req.body.longUrl;
+  try {
+    const longUrl = req.body.longUrl;
 
-  const baseUrl = "localhost:3000/";
+    const baseUrl = "localhost:3000/";
 
-  if (!longUrl)
-    return res.status(400).send({ status: false, msg: "please provide url." });
-    
+    if (!longUrl)
+      return res.status(400).send({ status: false, message: "please provide LongUrl." });
 
-  if (!validUrl.isUri(longUrl))
-    return res
-      .status(400)
-      .send({ status: false, msg: "please provide valid url." });
 
-      const checkUrl = await urlModel.findOne({longUrl : longUrl})
-      if(checkUrl) return res.status(400).send({status : false, msg : "url already used"})
+    if (!validUrl.isUri(longUrl))  //This is Package Method for URL Validation
+      return res
+        .status(400)
+        .send({ status: false, message: "please provide valid LongUrl." });
 
-  const urlCode = shortid.generate(longUrl);
-  const shortUrl = baseUrl + urlCode;
+    const checkUrl = await urlModel.findOne({ longUrl: longUrl })
+    if (checkUrl) return res.status(400).send({ status: false, message: "LongUrl already used" })
 
-  const url = { longUrl: longUrl, urlCode: urlCode, shortUrl: shortUrl }; 
+    const urlCode = shortid.generate(longUrl);  //This is Package Method to generate ShortLink
+    const shortUrl = baseUrl + urlCode;
 
-  const createUrlData= await urlModel.create(url)
+    const url = { longUrl: longUrl, urlCode: urlCode, shortUrl: shortUrl };
 
-  
+    const createUrlData = await urlModel.create(url)
 
-  return res.status(201).send({ status: true, data : createUrlData });
+    return res.status(201).send({ status: true, data: createUrlData });
+  }
+  catch (err) {
+    res.status(500).send({ status: false, message: err.message })
+  }
 };
 
 //get url
 
-const getUrl = async function(req, res){
+const getUrl = async function (req, res) {
+  try {
     const urlCode = req.params.urlCode
-    if(!urlCode) return res.status(400).send({status:false, msg:'Please provide UrlCode'})
+    if (!urlCode) return res.status(400).send({ status: false, message: 'Please provide UrlCode' })
 
-    if(!shortid.isValid(urlCode)) return res.status(400).send({status:false, msg:'Please provide valid UrlCode'}) 
+    if (!shortid.isValid(urlCode)) return res.status(400).send({ status: false, message: 'Please provide valid UrlCode' })
 
-     const checkUrlCode = await urlModel.findOne({urlCode:urlCode})
+    const checkUrlCode = await urlModel.findOne({ urlCode: urlCode })
 
-    if(!checkUrlCode) return res.status(404).send({status:false, msg:'UrlCode not found'})
-    
+    if (!checkUrlCode) return res.status(404).send({ status: false, message: 'UrlCode not found' })
+
     return res.status(302).redirect(checkUrlCode.longUrl)
+  }
+  catch (err) {
+    res.status(500).send({ status: false, message: err.message })
+  }
 
 }
 

@@ -23,7 +23,7 @@ const urlSchema = new mongoose.Schema(
             lowercase: true,
             trim: true
         }
-    }, { timestamp: true }
+    }, { timestamps: true }
 )
 
 module.exports = mongoose.model('URL', urlSchema)
