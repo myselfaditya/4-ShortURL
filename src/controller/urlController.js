@@ -18,7 +18,7 @@ const createUrl = async function (req, res) {
         .send({ status: false, message: "please provide valid LongUrl." });
 
     const checkUrl = await urlModel.findOne({ longUrl: longUrl })
-    if (checkUrl) return res.status(400).send({ status: false, message: "LongUrl already used" })
+    if (checkUrl) return res.status(400).send({ status: false, message: `LongUrl already used - ${checkUrl.urlCode}` })
 
     const urlCode = shortid.generate(longUrl);  //This is Package Method to generate ShortLink
     const shortUrl = baseUrl + urlCode;
