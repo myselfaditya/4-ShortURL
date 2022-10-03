@@ -76,13 +76,13 @@ const getUrl = async function (req, res) {
 
     
     if (objCache) {
-      return res.status(302).redirect(objCache.longUrl)
+      return res.status(302).redirect(objCache.longUrl) 
     }
 
     const checkUrlCode = await urlModel.findOne({ urlCode: urlCode })
 
     if (!checkUrlCode) return res.status(404).send({ status: false, message: 'UrlCode not found' })
-    await SET_ASYNC(`${urlCode}`, JSON.stringify(checkUrlCode))
+    await SET_ASYNC(`${urlCode}`, JSON.stringify(checkUrlCode), 'PX', 6000)
     return res.status(302).redirect(checkUrlCode.longUrl)
 
   }
