@@ -34,21 +34,24 @@ const createUrl = async function (req, res) {
   try {
     const longUrl = req.body.longUrl;
 
-    const baseUrl = "localhost:3000/";
+    const baseUrl = "http://localhost:3000/";
 
     if (!longUrl)
       return res.status(400).send({ status: false, message: "please provide LongUrl." });
 
 
-    if (!validUrl.isUri(longUrl))  //This is Package Method for URL Validation
+    if (!validUrl.isWebUri(longUrl))  //This is Package Method for URL Validation
       return res
         .status(400)
         .send({ status: false, message: "please provide valid LongUrl." });
 
-    // const checkUrl = await urlModel.findOne({ longUrl: longUrl })
     let cacheUrl = await GET_ASYNC(`${longUrl}`)// we are getting in string format
-    let checkUrl= JSON.parse(cacheUrl)
-    if (checkUrl) return res.status(400).send({ status: false, message: `LongUrl already used - ${checkUrl.urlCode}` })
+    let checkUrl = JSON.parse(cacheUrl)
+    if (checkUrl) return res.status(400).send({ status: false, message: `LongUrl already used - ${checkUrl.shortUrl}` })
+
+    const checkUrlInDb = await urlModel.findOne({ longUrl: longUrl }) 
+    if(checkUrlInDb)await SET_ASYNC(`${longUrl}`, JSON.stringify(checkUrlInDb), 'PX', 66000)
+    if (checkUrlInDb) return res.status(400).send({ status: false, message: `LongUrl already used - ${checkUrlInDb.shortUrl}` })
 
     const urlCode = shortid.generate(longUrl);  //This is Package Method to generate ShortLink
     const shortUrl = baseUrl + urlCode;
@@ -56,7 +59,7 @@ const createUrl = async function (req, res) {
     const url = { longUrl: longUrl, urlCode: urlCode, shortUrl: shortUrl };
 
     const createUrlData = await urlModel.create(url)
-    await SET_ASYNC(`${longUrl}`, JSON.stringify(createUrlData))
+    await SET_ASYNC(`${longUrl}`, JSON.stringify(createUrlData), 'PX', 66000)
 
     return res.status(201).send({ status: true, data: createUrlData });
   }
@@ -75,17 +78,17 @@ const getUrl = async function (req, res) {
     if (!shortid.isValid(urlCode)) return res.status(400).send({ status: false, message: 'Please provide valid UrlCode' })
 
     let cacheUrl = await GET_ASYNC(`${urlCode}`)// we are getting in string format
-    let objCache= JSON.parse(cacheUrl)// converting into object format  
+    let objCache = JSON.parse(cacheUrl)// converting into object format  
 
-    
+
     if (objCache) {
-      return res.status(302).redirect(objCache.longUrl) 
+      return res.status(302).redirect(objCache.longUrl)
     }
 
     const checkUrlCode = await urlModel.findOne({ urlCode: urlCode })
 
     if (!checkUrlCode) return res.status(404).send({ status: false, message: 'UrlCode not found' })
-    await SET_ASYNC(`${urlCode}`, JSON.stringify(checkUrlCode), 'PX', 6000)
+    await SET_ASYNC(`${urlCode}`, JSON.stringify(checkUrlCode), 'PX', 66000)
     return res.status(302).redirect(checkUrlCode.longUrl)
 
   }
