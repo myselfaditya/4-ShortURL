@@ -59,7 +59,7 @@ const createUrl = async function (req, res) {
     const url = { longUrl: longUrl, urlCode: urlCode, shortUrl: shortUrl };
 
     const createUrlData = await urlModel.create(url)
-    await SET_ASYNC(`${longUrl}`, JSON.stringify(createUrlData), 'PX', 66000)
+    await SET_ASYNC(`${longUrl}`, JSON.stringify(createUrlData), 'PX', 20000)
 
     return res.status(201).send({ status: true, data: createUrlData });
   }
@@ -88,7 +88,7 @@ const getUrl = async function (req, res) {
     const checkUrlCode = await urlModel.findOne({ urlCode: urlCode })
 
     if (!checkUrlCode) return res.status(404).send({ status: false, message: 'UrlCode not found' })
-    await SET_ASYNC(`${urlCode}`, JSON.stringify(checkUrlCode), 'PX', 66000)
+    await SET_ASYNC(`${urlCode}`, JSON.stringify(checkUrlCode), 'PX', 20000)
     return res.status(302).redirect(checkUrlCode.longUrl)
 
   }
