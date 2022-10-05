@@ -45,7 +45,9 @@ const createUrl = async function (req, res) {
         .status(400)
         .send({ status: false, message: "please provide valid LongUrl." });
 
-    const checkUrl = await urlModel.findOne({ longUrl: longUrl })
+    // const checkUrl = await urlModel.findOne({ longUrl: longUrl })
+    let cacheUrl = await GET_ASYNC(`${longUrl}`)// we are getting in string format
+    let checkUrl= JSON.parse(cacheUrl)
     if (checkUrl) return res.status(400).send({ status: false, message: `LongUrl already used - ${checkUrl.urlCode}` })
 
     const urlCode = shortid.generate(longUrl);  //This is Package Method to generate ShortLink
@@ -54,6 +56,7 @@ const createUrl = async function (req, res) {
     const url = { longUrl: longUrl, urlCode: urlCode, shortUrl: shortUrl };
 
     const createUrlData = await urlModel.create(url)
+    await SET_ASYNC(`${longUrl}`, JSON.stringify(createUrlData))
 
     return res.status(201).send({ status: true, data: createUrlData });
   }
