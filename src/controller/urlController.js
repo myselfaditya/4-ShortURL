@@ -1,6 +1,7 @@
 const urlModel = require("../model/urlModel");
-const validUrl = require("valid-url");
+
 const shortid = require("shortid");
+const axios =require('axios')
 
 const redis = require("redis");
 
@@ -20,11 +21,6 @@ redisClient.on("connect", async function () {
   console.log("Connected to Redis..");
 });
 
-
-
-//1. connect to the server
-//2. use the commands :
-
 //Connection setup for redis
 
 const SET_ASYNC = promisify(redisClient.SET).bind(redisClient);
@@ -39,18 +35,33 @@ const createUrl = async function (req, res) {
     if (!longUrl)
       return res.status(400).send({ status: false, message: "please provide LongUrl." });
 
-
-    if (!validUrl.isWebUri(longUrl))  //This is Package Method for URL Validation
+      let regex =/(?:https?):\/\/(\w+:?\w*)?(\S+)(:\d+)?(\/|\/([\w#!:.?+=&%!\-\/]))?/
+    if (!regex.test(longUrl))  //This is Package Method for URL Validation
       return res
         .status(400)
         .send({ status: false, message: "please provide valid LongUrl." });
+    
+    let obj = {
+      method: "get",
+      url: longUrl
+  }
+
+  let urlFound = false;
+  await axios(obj)
+      .then((res) => {
+          if (res.status == 201 || res.status == 200) urlFound = true;
+      })
+      .catch((err) => { });
+  if (!urlFound) {
+      return res.status(400).send({ status: false, message: "Please provide valid LongUrl" })
+  }
 
     let cacheUrl = await GET_ASYNC(`${longUrl}`)// we are getting in string format
     let checkUrl = JSON.parse(cacheUrl)
     if (checkUrl) return res.status(400).send({ status: false, message: `LongUrl already used - ${checkUrl.shortUrl}` })
 
     const checkUrlInDb = await urlModel.findOne({ longUrl: longUrl }) 
-    if(checkUrlInDb)await SET_ASYNC(`${longUrl}`, JSON.stringify(checkUrlInDb), 'PX', 66000)
+    if(checkUrlInDb)await SET_ASYNC(`${longUrl}`, JSON.stringify(checkUrlInDb), 'PX', 60000)
     if (checkUrlInDb) return res.status(400).send({ status: false, message: `LongUrl already used - ${checkUrlInDb.shortUrl}` })
 
     const urlCode = shortid.generate(longUrl);  //This is Package Method to generate ShortLink
@@ -59,7 +70,7 @@ const createUrl = async function (req, res) {
     const url = { longUrl: longUrl, urlCode: urlCode, shortUrl: shortUrl };
 
     const createUrlData = await urlModel.create(url)
-    await SET_ASYNC(`${longUrl}`, JSON.stringify(createUrlData), 'PX', 20000)
+    await SET_ASYNC(`${longUrl}`, JSON.stringify(createUrlData), 'PX', 60000)
 
     return res.status(201).send({ status: true, data: createUrlData });
   }
