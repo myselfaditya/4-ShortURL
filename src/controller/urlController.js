@@ -35,6 +35,11 @@ const createUrl = async function (req, res) {
     if (!longUrl)
       return res.status(400).send({ status: false, message: "please provide LongUrl." });
 
+    
+      let cacheUrl = await GET_ASYNC(`${longUrl}`)// we are getting in string format
+      let checkUrl = JSON.parse(cacheUrl)
+      if (checkUrl) return res.status(400).send({ status: false, message: `LongUrl already used - ${checkUrl.shortUrl}` })
+
       let regex =/(?:https?):\/\/(\w+:?\w*)?(\S+)(:\d+)?(\/|\/([\w#!:.?+=&%!\-\/]))?/
     if (!regex.test(longUrl))  //This is Package Method for URL Validation
       return res
@@ -56,9 +61,6 @@ const createUrl = async function (req, res) {
       return res.status(400).send({ status: false, message: "Please provide valid LongUrl" })
   }
 
-    let cacheUrl = await GET_ASYNC(`${longUrl}`)// we are getting in string format
-    let checkUrl = JSON.parse(cacheUrl)
-    if (checkUrl) return res.status(400).send({ status: false, message: `LongUrl already used - ${checkUrl.shortUrl}` })
 
     const checkUrlInDb = await urlModel.findOne({ longUrl: longUrl }) 
     if(checkUrlInDb)await SET_ASYNC(`${longUrl}`, JSON.stringify(checkUrlInDb), 'PX', 60000)
